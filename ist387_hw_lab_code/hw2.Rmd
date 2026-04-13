@@ -1,0 +1,137 @@
+---
+output: pdf_document
+---
+
+```{r include=FALSE}
+library(formatR)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff = 80), tidy = TRUE)
+```
+
+
+# Intro to Data Science - HW 2
+
+##### Copyright 2025, Jeffrey Stanton, Jeffrey Saltz, Christopher Dunham, and Jasmina Tacheva
+
+#### USE OF ARTIFICIAL INTELLIGENCE: While you are allowed to use generative AI as a learning tool for this assignment (e.g., to help with brainstorming, to see how to code a certain concept, to help identify flaws in reasoning, or to spot confusing or underdeveloped code segments), it must not be used to input homework questions, problems, or instructions directly, and you may not copy and paste any AI-generated content into your work. By submitting this assignment, you confirm that all the work is your own. 
+
+```{r}
+# Enter your name here: Tim Soron
+```
+
+### Attribution statement: (choose only one and delete the rest)
+
+```{r}
+# 1. I did this homework by myself, with help from the book and the professor.
+```
+
+### Reminders of things to practice from last week: 
+Assignment arrow:  		<- <br>
+The combine command: 	c( ) <br>
+Descriptive statistics: 	mean( ) sum( ) max( ) <br>
+Arithmetic operators:		+ - * /<br>
+Boolean operators:		>    <    >=    <=   ==   !=  <br>
+
+<br>
+
+**Step 0:** Prepare the data <br>
+A. Load the dataset from the provided URL and summarize the variables in **community_health_df** using an R command. Also, explore the structure of the dataframe - using another R command. In a brief comment, describe what this dataset is about based on your review of the data and the metadata here: https://health.data.ny.gov/Health/Community-Health-Indicator-Reports-CHIRS-Latest-Da/54ci-sdfi/about_data and your analysis 
+
+
+```{r}
+#install.packages('tidyverse')
+library(tidyverse)
+community_health_df <- read_csv('https://data-science-intro.s3.us-east-2.amazonaws.com/Community_Health_Indicator_Reports__CHIRS___Latest_Data.csv')
+
+summary(community_health_df)
+
+# Provide a brief description of the dataset:
+#It is about health indicators per county 
+```
+
+**Step 1:** Explore the dataset <br>
+
+
+A.	What is the minimum value of the **Percent** column? Use the min() function and save the result in a variable called min_percent:
+
+
+```{r}
+min_percent <- min(community_health_df$Percent)
+```
+
+B.	What is the maximum value of the **Percent** column? Use the max() function and save the result in a variable called max_percent:
+
+```{r}
+max_percent <- max(community_health_df$Percent)
+```
+
+C.	Output the fifth row of the dataframe:
+
+```{r}
+print(community_health_df[5,])
+
+```
+
+D. Create a new dataframe, **high_percent_df**, with only the rows where the Percent column is greater than 50. How many rows are in that dataframe (report this number using code, do not count by looking at the output):
+
+```{r}
+high_percent_df <- community_health_df[community_health_df$Percent > 50,]
+length(high_percent_df)
+```
+
+
+
+E.	Using the arrange() function, create a sorted dataframe based on the Percent column of community_health_df in descending order and store it in **sorted_percent_df1**. Explain how this function works.
+
+```{r}
+sorted_percent_df1 <- arrange(high_percent_df, desc(Percent))
+# arrange returns an ordered dataframe, by default it is assending and you can use desc() to order it in decsending
+```
+
+F. Now create a second sorted dataframe in descending order called **sorted_percent_df2** using the order() function. Explain in a comment how the function works.
+
+```{r}
+sorted_percent_df2 <- high_percent_df[order(-high_percent_df$Percent),]
+# Order works by arranging the rows in assending order or with - returns decsending, order returns the indices of the rows 
+```
+
+G. Print the top rows of each of the sorted dataframes using the head() function and explain in a comment what you see. Did the two sorting functions produce similar results?
+
+```{r}
+head(sorted_percent_df1)
+# the two functions produced the same results but got there differently
+```
+
+```{r}
+head(sorted_percent_df2)
+```
+
+H.	What are the County, Indicator, Percent, and Year corresponding to the highest Percent value? Ensure your code outputs only these four variables.
+
+
+```{r}
+ print(sorted_percent_df1[1,c("County Name", "Indicator", "Percent", "Data Years")])
+```
+
+**Step 2:** Using conditional if statements <br>
+
+A.	 Test if the min_percent is greater than 10 (output yes or no).
+
+**Hint:** Try modifying the following code in R: 
+
+```{r}
+if (min_percent > 10) "yes" else "no"
+```
+
+B.	 Following the same logic, test if max_percent is less than 100 (output yes or no):
+
+```{r}
+if (max_percent < 100) "yes" else "no"
+```
+
+**Step 3:** Code Comprehension <br>
+
+A.	In a few sentences, explain what the variables in this assignment are, what they represent, what functions you used, and what each function does.
+
+** Type your response here. **
+
+The variables are all based off of the community_health_df, they were made using different functions. The min and max percent were made using the functions min() and max() on the Percent column. The high_percent column was made by filtering Percent values over 50 in the community_health_df. sorted_percent_df1 and sorted_percent_df2 were made using order() and arrange(), these functions filtered the high_percent_df in decsending order. 
