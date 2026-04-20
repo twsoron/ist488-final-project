@@ -89,7 +89,7 @@ Question: {question}
     return intent
 
 # Setup Streamlit App
-st.title("Chatbot")
+st.title("IST 387 Assistant Chatbot")
 
 # Stores chat history
 if "messages" not in st.session_state:
