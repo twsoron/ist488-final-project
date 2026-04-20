@@ -1,15 +1,6 @@
 import subprocess
 import json
 
-# --------------------------------------------------
-# R Code Executor Tool
-# --------------------------------------------------
-# This file contains:
-#   1. The Python function that actually runs R code (run_r_code)
-#   2. The tool definition to register it with the OpenAI Responses API
-#   3. A helper to handle the tool call when the model invokes it
-# --------------------------------------------------
-
 # Blocklist of dangerous R functions that should never be executed
 BLOCKED_FUNCTIONS = [
     "system(", "shell(", "file.remove(", "unlink(",
@@ -51,10 +42,7 @@ def run_r_code(code: str) -> dict:
         return {"error": str(e)}
 
 
-# --------------------------------------------------
-# OpenAI Responses API tool definition
-# Pass this in the 'tools' list when calling the API
-# --------------------------------------------------
+
 
 R_EXECUTOR_TOOL = {
     "type": "function",
@@ -76,11 +64,6 @@ R_EXECUTOR_TOOL = {
     },
 }
 
-
-# --------------------------------------------------
-# Tool call handler
-# Call this when the model returns a tool_use block
-# --------------------------------------------------
 
 def handle_tool_call(tool_name: str, tool_input: dict) -> str:
     """
