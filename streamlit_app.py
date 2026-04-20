@@ -129,6 +129,9 @@ if question:
     # Retrieve relevant course content using RAG
     context = retrieve_context(question, intent)
 
+    st.write("INTENT:", intent)
+    st.write("CONTEXT:", context)
+
     # Manage conversation length
     st.session_state.turn_count += 1
     if st.session_state.turn_count > 10:
