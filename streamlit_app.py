@@ -85,20 +85,23 @@ def retrieve_context(query, intent):
 def classify_intent(question):
     response = client.responses.create(
         model="gpt-4o-mini",
-        input=f"""
-Classify the user's question into ONE of these categories:
-- conceptual_question
-- course_logistics
-- debugging_help
-- assignment_solution
+        input=f"""Classify the question into ONE label:
+- conceptual_question: asking what a concept, function, or package does
+- course_logistics: asking about deadlines, schedule, grading, or syllabus policy
+- debugging_help: asking why code errors or how to fix a bug
+- assignment_solution: asking for help solving a specific homework or lab problem
 
-Only return the label. No explanation.
+Questions that mention "HW" or "homework" can go either way — route by WHAT is being asked, not just the keyword:
+- "When is HW 3 due?" -> course_logistics
+- "What is part B of HW 3 asking me to do?" -> assignment_solution
+- "How do I solve problem 2 of HW 5?" -> assignment_solution
 
-Question: {question}
-"""
+Return only the label, nothing else.
+
+Question: {question}"""
     )
 
-    intent = response.output[0].content[0].text.strip().lower() # Cleans output
+    intent = response.output[0].content[0].text.strip().lower()
 
     return intent
 
