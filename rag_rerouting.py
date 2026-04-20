@@ -5,10 +5,6 @@ import chromadb
 from pathlib import Path
 import fitz
 
-# Fix for ChromaDB on Streamlit
-__import__('pysqlite3')
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-
 # Initialize ChromaDB
 if 'VectorDB' not in st.session_state:
     chroma_client = chromadb.PersistentClient(path="./ChromaDB")
