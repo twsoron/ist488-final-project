@@ -3,6 +3,9 @@ from openai import OpenAI
 from pathlib import Path
 import chromadb
 
+from hybrid_search import HybridIndex
+from reranker import rerank_safe
+
 # Reads prompt MD files with instructions for how to answer different types of student questions
 def read_prompt(file_name):
     return (Path("prompts") / file_name).read_text()
@@ -30,14 +33,24 @@ if "client" not in st.session_state:
 
 client = st.session_state.client
 
-# Initialize ChromaDB client
+# Initialize ChromaDB client + in-memory BM25 index for hybrid search.
 if "collection" not in st.session_state:
     chroma_client = chromadb.PersistentClient(path="./ChromaDB")
     st.session_state.collection = chroma_client.get_or_create_collection("CourseCollection")
 
 collection = st.session_state.collection
 
-# Function that converts text into vector embeddings for semantic search
+if "hybrid_index" not in st.session_state:
+    st.session_state.hybrid_index = HybridIndex(collection)
+
+hybrid_index = st.session_state.hybrid_index
+
+# Hybrid (BM25+vector) retrieval -> ZeroEntropy rerank. Drop candidates below
+# this reranker score so weakly-relevant context doesn't poison the answer.
+RERANK_SCORE_FLOOR = 0.25
+FETCH_K = 15
+RERANK_TOP_N = 5
+
 def embed(text):
     response = client.embeddings.create(
         model="text-embedding-3-small",
@@ -45,27 +58,28 @@ def embed(text):
     )
     return response.data[0].embedding
 
-# Function to retrieve RAG context based on user question category
 def retrieve_context(query, intent):
     query_embedding = embed(query)
 
-    results = collection.query(
-        query_embeddings=[query_embedding],
-        n_results=3,
-        where=FILTERS[intent]
+    fused = hybrid_index.hybrid_retrieve(
+        query=query,
+        query_embedding=query_embedding,
+        top_k=FETCH_K,
+        fetch_k=FETCH_K,
+        where=FILTERS.get(intent),
     )
-    if not results["documents"] or len(results["documents"][0]) == 0:
+    if not fused:
         return "No relevant course material found."
-    
-    docs = results["documents"][0]
-    sources = results["metadatas"][0]
 
-    context = "\n\n".join(
-        f"Source: {src['source']}\n{doc}"
-        for doc, src in zip(docs, sources)
+    ranked = rerank_safe(query, fused, top_n=RERANK_TOP_N)
+    ranked = [r for r in ranked if r.get("relevance_score", 0) >= RERANK_SCORE_FLOOR]
+
+    if not ranked:
+        return "No relevant course material found."
+
+    return "\n\n".join(
+        f"Source: {r.get('source')}\n{r['text']}" for r in ranked
     )
-
-    return context
 
 # Intent classifier function that uses a small model to classify user question into prompt categories
 def classify_intent(question):

@@ -10,6 +10,9 @@ import sys
 import chromadb
 from openai import OpenAI
 
+# Make stdout tolerant of unicode on Windows
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 from reranker import rerank
 
 QUERIES = [

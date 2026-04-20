@@ -3,3 +3,4 @@ openai
 chromadb
 PyMuPDF
 requests
+rank_bm25
