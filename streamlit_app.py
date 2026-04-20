@@ -72,7 +72,13 @@ def retrieve_context(query, intent):
         return "No relevant course material found."
 
     ranked = rerank_safe(query, fused, top_n=RERANK_TOP_N)
-    ranked = [r for r in ranked if r.get("relevance_score", 0) >= RERANK_SCORE_FLOOR]
+
+    # rerank_safe returns all-zero scores when it falls back (e.g. missing
+    # ZEROENTROPY_API_KEY). Only apply the relevance floor when the reranker
+    # actually ran — otherwise we'd drop every chunk and answer nothing.
+    reranker_ran = any(r.get("relevance_score", 0) > 0 for r in ranked)
+    if reranker_ran:
+        ranked = [r for r in ranked if r.get("relevance_score", 0) >= RERANK_SCORE_FLOOR]
 
     if not ranked:
         return "No relevant course material found."
