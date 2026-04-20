@@ -84,7 +84,7 @@ def retrieve_context(query, intent):
 # Intent classifier function that uses a small model to classify user question into prompt categories
 def classify_intent(question):
     response = client.responses.create(
-        model="gpt-4o-mini",
+        model="gpt-5.4-mini",
         input=f"""Classify the question into ONE label:
 - conceptual_question: asking what a concept, function, or package does
 - course_logistics: asking about deadlines, schedule, grading, or syllabus policy
