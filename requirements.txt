@@ -4,3 +4,4 @@ chromadb
 PyMuPDF
 requests
 rank_bm25
+protobuf==3.20.3
