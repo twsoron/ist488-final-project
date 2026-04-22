@@ -114,6 +114,24 @@ Question: {question}"""
 # Setup Streamlit App
 st.title("IST 387 Assistant Chatbot")
 
+with st.sidebar:
+    st.markdown("### 📚 IST 387 Assistant")
+    st.caption("A Socratic learning companion for Applied Data Science")
+    st.divider()
+    with st.expander("💡 How to use"):
+        st.markdown("""
+- Ask concept questions about R, stats, or data science
+- Ask about course logistics like deadlines or grading
+- Paste broken R code for debugging help
+- Ask for guidance on assignments — this bot guides, not gives answers
+        """)
+    st.divider()
+    
+    if st.button("Clear Chat"):
+        st.session_state.messages = []
+        st.session_state.last_response_id = None
+        st.rerun()
+        
 # Stores chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -125,12 +143,6 @@ if "last_response_id" not in st.session_state:
 # Stores turn count for conversation context
 if "turn_count" not in st.session_state:
     st.session_state.turn_count = 0
-
-# Clear chat button
-if st.button("Clear Chat"):
-    st.session_state.messages = []
-    st.session_state.last_response_id = None
-    st.rerun()
 
 # Display previous chat messages
 for message in st.session_state.messages:
