@@ -29,8 +29,9 @@ st.markdown(
 st.markdown(
     """
     <style>
-    .stChatInputContainer textarea {
+    div[data-testid="stChatInput"] textarea {
         background-color: transparent !important;
+        color: white !important;
     }
     </style>
     """,
