@@ -18,7 +18,7 @@ st.markdown(
         background:
             linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
             url("data:image/jpg;base64,{img}");
-        background-size: cover;
+        background-size: contain;
         background-position: center;
         background-repeat: no-repeat;
     }}
