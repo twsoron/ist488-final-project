@@ -2,9 +2,30 @@ import streamlit as st
 from openai import OpenAI
 from pathlib import Path
 import chromadb
-
+import base64
 from hybrid_search import HybridIndex
 from reranker import rerank_safe
+
+def get_base64(file):
+    with open(file, "rb") as f:
+        return base64.b64encode(f.read()).decode()
+img = get_base64("images/background.jpg")
+
+st.markdown(
+    f"""
+    <style>
+    .stApp {{
+        background:
+            linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+            url("data:image/jpg;base64,{img}");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # Reads prompt MD files with instructions for how to answer different types of student questions
 def read_prompt(file_name):
