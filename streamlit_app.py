@@ -26,37 +26,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-st.markdown(
-    """
-    <style>
-    /* Main app background */
-    .stApp {
-        background: transparent !important;
-    }
 
-    /* Main container */
-    .main {
-        background: transparent !important;
-    }
-
-    /* Block container (where content sits) */
-    .block-container {
-        background: transparent !important;
-    }
-
-    /* Remove header background */
-    header {
-        background: transparent !important;
-    }
-
-    /* Remove footer */
-    footer {
-        background: transparent !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 # Reads prompt MD files with instructions for how to answer different types of student questions
 def read_prompt(file_name):
     return (Path("prompts") / file_name).read_text()
