@@ -113,6 +113,7 @@ Question: {question}"""
 
 # Setup Streamlit App
 st.title("IST 387 Assistant Chatbot")
+st.caption("Ask a question about homework, labs, functions/packages, or course information")
 
 with st.sidebar:
     st.markdown("### 📚 IST 387 Assistant")
