@@ -29,27 +29,29 @@ st.markdown(
 st.markdown(
     """
     <style>
-    /* Bottom container (main culprit) */
-    div[data-testid="stBottomBlockContainer"] {
+    /* Main app background */
+    .stApp {
         background: transparent !important;
     }
 
-    /* Chat input wrapper */
-    div[data-testid="stChatInput"] {
+    /* Main container */
+    .main {
         background: transparent !important;
     }
 
-    /* Inner box */
-    div[data-testid="stChatInput"] > div {
+    /* Block container (where content sits) */
+    .block-container {
         background: transparent !important;
-        box-shadow: none !important;
-        border: none !important;
     }
 
-    /* Text area */
-    div[data-testid="stChatInput"] textarea {
+    /* Remove header background */
+    header {
         background: transparent !important;
-        color: white !important;
+    }
+
+    /* Remove footer */
+    footer {
+        background: transparent !important;
     }
     </style>
     """,
