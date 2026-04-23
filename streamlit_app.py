@@ -26,7 +26,16 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
+st.markdown(
+    """
+    <style>
+    .stChatInputContainer textarea {
+        background-color: transparent !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 # Reads prompt MD files with instructions for how to answer different types of student questions
 def read_prompt(file_name):
     return (Path("prompts") / file_name).read_text()
