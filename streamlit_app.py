@@ -29,14 +29,24 @@ st.markdown(
 st.markdown(
     """
     <style>
+    /* Bottom container (main culprit) */
+    div[data-testid="stBottomBlockContainer"] {
+        background: transparent !important;
+    }
+
+    /* Chat input wrapper */
     div[data-testid="stChatInput"] {
         background: transparent !important;
     }
 
+    /* Inner box */
     div[data-testid="stChatInput"] > div {
         background: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
     }
 
+    /* Text area */
     div[data-testid="stChatInput"] textarea {
         background: transparent !important;
         color: white !important;
