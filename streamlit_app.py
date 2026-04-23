@@ -30,11 +30,15 @@ st.markdown(
     """
     <style>
     div[data-testid="stChatInput"] {
-        background-color: transparent !important;
+        background: transparent !important;
+    }
+
+    div[data-testid="stChatInput"] > div {
+        background: transparent !important;
     }
 
     div[data-testid="stChatInput"] textarea {
-        background-color: transparent !important;
+        background: transparent !important;
         color: white !important;
     }
     </style>
