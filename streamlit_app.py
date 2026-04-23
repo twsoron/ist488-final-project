@@ -9,7 +9,7 @@ from reranker import rerank_safe
 def get_base64(file):
     with open(file, "rb") as f:
         return base64.b64encode(f.read()).decode()
-img = get_base64("images/background.jpg")
+img = get_base64("images/background.png")
 
 st.markdown(
     f"""
