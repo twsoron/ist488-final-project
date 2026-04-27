@@ -8,6 +8,7 @@ import chromadb
 import base64
 from hybrid_search import HybridIndex
 from reranker import rerank_safe
+from r_executor import R_EXECUTOR_TOOL, handle_tool_call
 
 def get_base64(file):
     with open(file, "rb") as f:
@@ -329,47 +330,67 @@ if question:
         full_text = ""
         final_response = None
 
-        # Calls model with no previous memory
-        if st.session_state.last_response_id is None:
-            stream = client.responses.create(
+        # Initial request — model may call run_r_code; we feed results back and
+        # iterate up to MAX_TOOL_ROUNDS times before giving up.
+        kwargs = dict(
+            model="gpt-4o",
+            instructions=instructions,
+            input=f"""
+                Use the following course material to help answer the question.
+
+                Context:
+                {context}
+
+                Question:
+                {question}
+                """,
+            tools=[R_EXECUTOR_TOOL],
+            stream=True,
+            store=True,
+        )
+        if st.session_state.last_response_id is not None:
+            kwargs["previous_response_id"] = st.session_state.last_response_id
+
+        MAX_TOOL_ROUNDS = 3
+        for _ in range(MAX_TOOL_ROUNDS):
+            stream = client.responses.create(**kwargs)
+            function_calls = []
+
+            for event in stream:
+                if event.type == "response.output_text.delta":
+                    full_text += event.delta
+                    placeholder.write(full_text)
+                elif event.type == "response.output_item.done":
+                    item = event.item
+                    if getattr(item, "type", None) == "function_call":
+                        function_calls.append(item)
+                elif event.type == "response.completed":
+                    final_response = event.response
+
+            if not function_calls:
+                break
+
+            # Execute tools and feed outputs back as the next input
+            tool_outputs = []
+            for fc in function_calls:
+                try:
+                    args = json.loads(fc.arguments)
+                except json.JSONDecodeError:
+                    args = {}
+                tool_outputs.append({
+                    "type": "function_call_output",
+                    "call_id": fc.call_id,
+                    "output": handle_tool_call(fc.name, args),
+                })
+
+            kwargs = dict(
                 model="gpt-4o",
-                instructions=instructions,
-                input=f"""
-                    Use the following course material to help answer the question.
-
-                    Context:
-                    {context}
-
-                    Question:
-                    {question}
-                    """,
+                previous_response_id=final_response.id,
+                input=tool_outputs,
+                tools=[R_EXECUTOR_TOOL],
                 stream=True,
-                store=True
+                store=True,
             )
-        else: # Continues a conversation that already has memory
-            stream = client.responses.create(
-                model="gpt-4o",
-                instructions=instructions,
-                input=f"""
-                    Use the following course material to help answer the question.
-
-                    Context:
-                    {context}
-
-                    Question:
-                    {question}
-                    """,
-                previous_response_id=st.session_state.last_response_id,
-                stream=True,
-                store=True
-            )
-
-        for event in stream:
-            if event.type == "response.output_text.delta":
-                full_text += event.delta
-                placeholder.write(full_text)
-            elif event.type == "response.completed":
-                final_response = event.response
 
         st.session_state.messages.append({"role": "assistant", "content": full_text}) # Store assistant response
 
