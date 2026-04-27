@@ -299,8 +299,17 @@ for message in st.session_state.messages:
 question = st.chat_input("Ask a question")
 
 if question:
+    # Follow-ups like "what is that about?" don't carry enough signal for
+    # BM25/vector retrieval on their own. When there's a prior user turn,
+    # prepend it so routing + retrieval can resolve references.
+    prior_user_msg = next(
+        (m["content"] for m in reversed(st.session_state.messages) if m["role"] == "user"),
+        None,
+    )
+    retrieval_query = f"{prior_user_msg}\n{question}" if prior_user_msg else question
+
     # Classify question intent using intent classifier function
-    intent = classify_intent(question)
+    intent = classify_intent(retrieval_query)
     if intent not in PROMPTS:
         intent = "conceptual_question" # Even though model is programmed to choose out of a list of categories, ask it to revert to a conceptual question if it prints an unexpected label
 
@@ -312,7 +321,7 @@ if question:
         instructions += render_memory_for_prompt(st.session_state.memory)
 
     # Retrieve relevant course content using RAG
-    context = retrieve_context(question, intent)
+    context = retrieve_context(retrieval_query, intent)
 
     # Manage conversation length
     st.session_state.turn_count += 1
