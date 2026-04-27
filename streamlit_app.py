@@ -14,21 +14,6 @@ def get_base64(file):
         return base64.b64encode(f.read()).decode()
 img = get_base64("images/background.png")
 
-st.markdown(
-    f"""
-    <style>
-    .stApp {{
-        background:
-            linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),
-            url("data:image/jpg;base64,{img}");
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 
 # Reads prompt MD files with instructions for how to answer different types of student questions
 def read_prompt(file_name):
