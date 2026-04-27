@@ -346,11 +346,12 @@ if question:
             instructions=instructions,
             input=f"""
                 Use the following course material to help answer the question.
+                {f"The student's previous question was: {prior_user_msg}" if prior_user_msg else ""}
 
                 Context:
                 {context}
 
-                Question:
+                Current question:
                 {question}
                 """,
             tools=[R_EXECUTOR_TOOL],
