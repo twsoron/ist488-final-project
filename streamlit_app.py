@@ -1,3 +1,6 @@
+import json
+import time
+
 import streamlit as st
 from openai import OpenAI
 from pathlib import Path
@@ -71,6 +74,116 @@ hybrid_index = st.session_state.hybrid_index
 RERANK_SCORE_FLOOR = 0.25
 FETCH_K = 15
 RERANK_TOP_N = 5
+
+# --- Long-term student memory ---------------------------------------------
+# Sectioned per-student profile persisted to disk. Always-on slice is small
+# (~200-400 tokens once populated) so context stays bounded. After each turn
+# a cheap extractor proposes JSON patches and we merge with caps + dedupe.
+
+MEMORY_DIR = Path(__file__).parent / "memory"
+MEMORY_DIR.mkdir(exist_ok=True)
+
+LIST_CAPS = {
+    "learning_style": 5,
+    "weak_areas": 5,
+    "goals": 5,
+    "recent_topics": 10,
+}
+
+EMPTY_PROFILE = {
+    "profile": {},
+    "learning_style": [],
+    "progress": {},
+    "weak_areas": [],
+    "goals": [],
+    "recent_topics": [],
+    "last_updated": None,
+}
+
+EXTRACTOR_SYSTEM = """You maintain a student's long-term memory profile for a course chatbot.
+Given the current profile and the latest exchange, return ONLY a JSON object with fields to add/update.
+
+Allowed keys:
+- profile: object of stable facts (name, major, year). Merged shallowly.
+- learning_style: list of short phrases to append (e.g. "prefers worked examples")
+- progress: object describing current course progress; values overwrite
+- weak_areas: list of topics the student struggled with — append
+- goals: list of stated goals — append
+- recent_topics: list of topics discussed this turn — append
+
+Rules:
+- Return {} if nothing durable was learned.
+- Each list item must be under 12 words.
+- Only record things the student said or clearly demonstrated. No speculation.
+- Do not duplicate items already in the profile."""
+
+
+def memory_path(student_id):
+    safe = "".join(c for c in student_id if c.isalnum() or c in "-_").lower()
+    return MEMORY_DIR / f"{safe or 'anon'}.json"
+
+
+def load_memory(student_id):
+    p = memory_path(student_id)
+    if p.exists():
+        try:
+            return {**EMPTY_PROFILE, **json.loads(p.read_text(encoding="utf-8"))}
+        except json.JSONDecodeError:
+            pass
+    return {k: (v.copy() if isinstance(v, (list, dict)) else v) for k, v in EMPTY_PROFILE.items()}
+
+
+def save_memory(student_id, mem):
+    p = memory_path(student_id)
+    tmp = p.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(mem, indent=2), encoding="utf-8")
+    tmp.replace(p)
+
+
+def render_memory_for_prompt(mem):
+    visible = {k: v for k, v in mem.items() if k != "last_updated" and v}
+    if not visible:
+        return ""
+    return (
+        "\n\nSTUDENT MEMORY (use to personalize tone, examples, and depth — do not recite verbatim):\n"
+        + json.dumps(visible, indent=2)
+    )
+
+
+def extract_updates(mem, user_msg, assistant_msg):
+    try:
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": EXTRACTOR_SYSTEM},
+                {
+                    "role": "user",
+                    "content": (
+                        f"Current profile:\n{json.dumps(mem)}\n\n"
+                        f"Student: {user_msg}\n\nAssistant: {assistant_msg}"
+                    ),
+                },
+            ],
+        )
+        return json.loads(resp.choices[0].message.content or "{}")
+    except Exception:
+        return {}
+
+
+def merge_updates(mem, updates):
+    new = {k: (v.copy() if isinstance(v, (list, dict)) else v) for k, v in mem.items()}
+    for key, val in updates.items():
+        if key in ("profile", "progress") and isinstance(val, dict):
+            new[key] = {**new.get(key, {}), **val}
+        elif key in LIST_CAPS and isinstance(val, list):
+            existing = list(new.get(key, []))
+            for item in val:
+                if isinstance(item, str) and item.strip() and item not in existing:
+                    existing.append(item.strip())
+            new[key] = existing[-LIST_CAPS[key]:]
+    new["last_updated"] = time.strftime("%Y-%m-%d")
+    return new
 
 def embed(text):
     response = client.embeddings.create(
@@ -148,7 +261,32 @@ with st.sidebar:
 - Ask for guidance on assignments — this bot guides, not gives answers
         """)
     st.divider()
-    
+
+    st.markdown("### 👤 Student")
+    student_id = st.text_input(
+        "Student ID (optional — enables personalization)",
+        key="student_id",
+        placeholder="e.g. jjkomosi",
+    )
+
+    if student_id:
+        if "memory" not in st.session_state or st.session_state.get("loaded_for") != student_id:
+            st.session_state.memory = load_memory(student_id)
+            st.session_state.loaded_for = student_id
+
+        with st.expander("View my profile"):
+            st.json(st.session_state.memory)
+
+        if st.button("Clear my memory"):
+            st.session_state.memory = {
+                k: (v.copy() if isinstance(v, (list, dict)) else v)
+                for k, v in EMPTY_PROFILE.items()
+            }
+            save_memory(student_id, st.session_state.memory)
+            st.rerun()
+
+    st.divider()
+
     if st.button("Clear Chat"):
         st.session_state.messages = []
         st.session_state.last_response_id = None
@@ -182,6 +320,10 @@ if question:
 
     # Selects prompt instructions based on intent
     instructions = PROMPTS[intent]
+
+    # Append student memory slice when a Student ID is set
+    if student_id and "memory" in st.session_state:
+        instructions += render_memory_for_prompt(st.session_state.memory)
 
     # Retrieve relevant course content using RAG
     context = retrieve_context(question, intent)
@@ -249,3 +391,10 @@ if question:
         # Updates last response ID
         if final_response is not None:
             st.session_state.last_response_id = final_response.id
+
+    # Update long-term memory after the response (non-blocking from user POV)
+    if student_id and "memory" in st.session_state:
+        updates = extract_updates(st.session_state.memory, question, full_text)
+        if updates:
+            st.session_state.memory = merge_updates(st.session_state.memory, updates)
+            save_memory(student_id, st.session_state.memory)
